@@ -9,11 +9,13 @@ export default class LocalStorageCacheStorageAdapter {
     setImmediate(callback.bind(null, null, item));
   }
 
-  setItem(key: string, data: string): void {
+  setItem(key: string, data: string, callback: (error: any) => void): void {
     localStorage.setItem(key, data);
+    callback();
   }
 
-  removeItem(key: string): void {
+  removeItem(key: string, callback: (error: any) => void): void {
     localStorage.removeItem(key);
+    callback();
   }
 }

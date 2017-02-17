@@ -92,6 +92,28 @@ export default class CacheRecordStore {
     return this.records[dataID] || null;
   }
 
+  static serializeRangesInRecord(record: CacheRecord): CacheRecord {
+    const range = record.__range__;
+    if (range && !Array.isArray(range)) {
+      record.__range__ = range.toJSON();
+    }
+    return record;
+  }
+
+  egestJSON(): {
+    records: CacheRecordMap,
+    rootCallMap: CacheRootCallMap
+  } {
+    const records = {};
+    Object.keys(this.records).forEach(key => {
+      records[key] = CacheRecordStore.serializeRangesInRecord(this.records[key])
+    });
+    return {
+      records,
+      rootCallMap: this.rootCallMap,
+    }
+  }
+
   /* To ingest previously serialized JSON after an async load */
   ingestJSON({
     records,
