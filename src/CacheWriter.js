@@ -7,6 +7,7 @@
 
 import ReadWriteLock from 'rwlock';
 import Cycle from 'cycle';
+import GraphQLRange from 'react-relay/lib/GraphQLRange'
 
 import CacheRecordStore from './CacheRecordStore';
 import LocalStorageCacheStorageAdapter from './LocalStorageCacheStorageAdapter';
@@ -73,7 +74,7 @@ export default class CacheWriter {
         };
       }
       record[field] = value;
-      this.cache.records[dataId] = record;
+      this.cache.writeRecord(dataId, CacheWriter.serializeRangesInRecord(record));
       try {
         const serialized = JSON.stringify(Cycle.decycle(this.cache.egestJSON()));
         this.cacheStorageAdapter.setItem(this.cacheKey, serialized, () => {
@@ -87,13 +88,16 @@ export default class CacheWriter {
 
   writeNode(dataId: string, record: CacheRecord): void {
     this.lock.writeLock(release => {
-      this.cache.writeRecord(dataId, record);
+      this.cache.writeRecord(dataId, CacheWriter.serializeRangesInRecord(record));
     });
   }
 
   readNode(dataId: string, callback: (error: any, value: any) => void): void {
     this.lock.readLock(release => {
-      const record = this.cache.readNode(dataId);
+      let record = this.cache.readNode(dataId);
+      if (record) {
+        record = CacheWriter.deserializeRangesInRecord(record);
+      }
       release();
       setImmediate(callback.bind(null, null, record));
     });
@@ -122,4 +126,19 @@ export default class CacheWriter {
     });
   }
 
+  static deserializeRangesInRecord(record: CacheRecord): CacheRecord {
+    const range = record.__range__;
+    if (range && Array.isArray(range)) {
+      record.__range__ = GraphQLRange.fromJSON(range)
+    }
+    return record;
+  }
+
+  static serializeRangesInRecord(record: CacheRecord): CacheRecord {
+    const range = record.__range__;
+    if (range && !Array.isArray(range)) {
+      record.__range__ = range.toJSON();
+    }
+    return record;
+  }
 }

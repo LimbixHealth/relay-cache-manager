@@ -92,24 +92,12 @@ export default class CacheRecordStore {
     return this.records[dataID] || null;
   }
 
-  static serializeRangesInRecord(record: CacheRecord): CacheRecord {
-    const range = record.__range__;
-    if (range && !Array.isArray(range)) {
-      record.__range__ = range.toJSON();
-    }
-    return record;
-  }
-
   egestJSON(): {
     records: CacheRecordMap,
     rootCallMap: CacheRootCallMap
   } {
-    const records = {};
-    Object.keys(this.records).forEach(key => {
-      records[key] = CacheRecordStore.serializeRangesInRecord(this.records[key])
-    });
     return {
-      records,
+      records: this.records,
       rootCallMap: this.rootCallMap,
     }
   }
@@ -122,15 +110,7 @@ export default class CacheRecordStore {
     records: CacheRecordMap,
     rootCallMap: CacheRootCallMap
   }) {
-    for (const key in records) {
-      const record = records[key];
-      const range = record.__range__;
-      if (range) {
-        record.__range__ = GraphQLRange.fromJSON(range)
-      }
-      this.records[key] = record;
-    }
-
+    Object.assign(this.records, records);
     Object.assign(this.rootCallMap, rootCallMap);
   }
 }
